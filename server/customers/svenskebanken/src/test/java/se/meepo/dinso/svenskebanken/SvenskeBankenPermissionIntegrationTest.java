@@ -69,6 +69,10 @@ class SvenskeBankenPermissionIntegrationTest {
                 companyData.changeSalary(
                     profile, primary.companyId(), employment.id(), new BigDecimal("40000")))
         .isInstanceOf(SecurityException.class);
+    // Permission is checked before input validation: even an invalid salary gives 403, not 400.
+    assertThatThrownBy(
+            () -> companyData.changeSalary(profile, primary.companyId(), employment.id(), null))
+        .isInstanceOf(SecurityException.class);
   }
 
   @Test

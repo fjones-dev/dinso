@@ -197,6 +197,7 @@ const logout = async (): Promise<void> => {
       headers: { Authorization: `Bearer ${session.sessionToken}` },
     }).catch(() => undefined)
   session.end()
+  portal.reset()
   selectedProfileId.value = ''
   loginError.value = ''
   await router.push({ name: 'login' })

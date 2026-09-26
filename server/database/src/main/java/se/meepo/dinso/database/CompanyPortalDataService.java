@@ -124,8 +124,8 @@ public class CompanyPortalDataService {
       String planId,
       BigDecimal salary,
       LocalDate startsOn) {
-    requireCustomerSupports(CompanyMutation.ADD_EMPLOYEE);
     var company = requireCompanyPermission(profile, companyId, CompanyAction.ADD_EMPLOYEE);
+    requireCustomerSupports(CompanyMutation.ADD_EMPLOYEE);
     if (name == null
         || name.isBlank()
         || salary == null
@@ -152,10 +152,10 @@ public class CompanyPortalDataService {
   @Transactional
   public Employment changeSalary(
       DemoProfile profile, String companyId, String employmentId, BigDecimal salary) {
+    var item = ownedEmployment(profile, companyId, employmentId, CompanyAction.CHANGE_SALARY);
     requireCustomerSupports(CompanyMutation.CHANGE_SALARY);
     if (salary == null || salary.signum() <= 0)
       throw new IllegalArgumentException("Lönen måste vara större än noll");
-    var item = ownedEmployment(profile, companyId, employmentId, CompanyAction.CHANGE_SALARY);
     item.changeSalary(salary);
     event(profile, "CHANGE_SALARY", "Lön ändrad för " + item.getPerson().getDisplayName());
     return employment(item);
@@ -168,12 +168,12 @@ public class CompanyPortalDataService {
       String employmentId,
       LeaveReason reason,
       LocalDate until) {
+    var item = ownedEmployment(profile, companyId, employmentId, CompanyAction.REGISTER_LEAVE);
     requireCustomerSupports(CompanyMutation.REGISTER_LEAVE);
     if (!rules.leaveReasons().contains(reason)
         || until == null
         || until.isAfter(LocalDate.now(clock).plusMonths(rules.maximumLeaveMonths())))
       throw new IllegalArgumentException("Tjänstledigheten följer inte kundens regler");
-    var item = ownedEmployment(profile, companyId, employmentId, CompanyAction.REGISTER_LEAVE);
     item.registerLeave(until);
     event(
         profile,
@@ -185,8 +185,8 @@ public class CompanyPortalDataService {
   @Transactional
   public Employment endEmployment(
       DemoProfile profile, String companyId, String employmentId, LocalDate endsOn) {
-    requireCustomerSupports(CompanyMutation.END_EMPLOYMENT);
     var item = ownedEmployment(profile, companyId, employmentId, CompanyAction.END_EMPLOYMENT);
+    requireCustomerSupports(CompanyMutation.END_EMPLOYMENT);
     item.end(endsOn == null ? LocalDate.now(clock) : endsOn);
     event(
         profile, "END_EMPLOYMENT", "Anställning avslutad för " + item.getPerson().getDisplayName());

@@ -1,13 +1,11 @@
 package se.meepo.dinso.api;
 
 import java.util.Set;
-import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.*;
 import se.meepo.dinso.database.AdminPermissionService;
 import se.meepo.dinso.service.CompanyAction;
 
 @RestController
-@Profile("company")
 @RequestMapping("/api/admin")
 public class AdminPermissionController {
   private final AdminPermissionService admin;
