@@ -146,9 +146,11 @@ class SvenskeBankenSeedIntegrationTest {
             HttpResponse.BodyHandlers.ofString());
     assertThat(transactionsResponse.statusCode()).isEqualTo(200);
     var viewerToken = login(client, "svenskebanken-viewer");
+    var viewerCompanyId =
+        companyData.companies(sessions.requireActive(viewerToken)).getFirst().id();
     var plansResponse =
         client.send(
-            request("/api/company/plans")
+            request("/api/company/plans?companyId=" + viewerCompanyId)
                 .header("Authorization", "Bearer " + viewerToken)
                 .GET()
                 .build(),
@@ -156,7 +158,7 @@ class SvenskeBankenSeedIntegrationTest {
     assertThat(plansResponse.statusCode()).isEqualTo(200);
     var writeResponse =
         client.send(
-            request("/api/company/employees")
+            request("/api/company/employees?companyId=" + viewerCompanyId)
                 .header("Authorization", "Bearer " + viewerToken)
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString("{\"name\":\"Testperson\"}"))

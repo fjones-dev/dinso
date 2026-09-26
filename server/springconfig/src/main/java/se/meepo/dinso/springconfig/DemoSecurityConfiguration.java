@@ -2,7 +2,6 @@ package se.meepo.dinso.springconfig;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -33,8 +32,8 @@ public class DemoSecurityConfiguration {
             auth ->
                 auth.requestMatchers("/api/demo/**", "/api/auth/**", "/h2-console/**", "/error")
                     .permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/company/**")
-                    .hasAnyRole("COMPANY_ADMIN", "SYSTEM_ADMIN")
+                    .requestMatchers("/api/admin/**")
+                    .hasRole("SYSTEM_ADMIN")
                     .requestMatchers("/api/private/**", "/api/company/**")
                     .authenticated()
                     .anyRequest()

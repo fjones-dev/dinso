@@ -46,6 +46,7 @@ public class CompanyPortalDataService {
 
   public List<Company> companies(DemoProfile profile) {
     return authorizations(profile).stream()
+        .filter(item -> item.holds(CompanyAction.READ))
         .map(
             item ->
                 new Company(item.getCompany().getId(), item.getCompany().getName(), item.getRole()))
@@ -53,7 +54,7 @@ public class CompanyPortalDataService {
   }
 
   public Overview overview(DemoProfile profile, String companyId) {
-    var company = companyFor(profile, companyId);
+    var company = requireCompanyPermission(profile, companyId, CompanyAction.READ);
     return new Overview(
         company.getId(),
         company.getName(),
@@ -69,21 +70,22 @@ public class CompanyPortalDataService {
   }
 
   public List<Case> cases(DemoProfile profile, String companyId) {
-    return cases.findByCompanyOrderByDueOn(companyFor(profile, companyId)).stream()
+    return cases.findByCompanyOrderByDueOn(requireCompanyPermission(profile, companyId, CompanyAction.READ))
+        .stream()
         .map(this::caseItem)
         .toList();
   }
 
   @Transactional
   public Case approveCase(DemoProfile profile, String companyId, String caseId) {
-    var item = ownedCase(profile, companyId, caseId);
+    var item = ownedCase(profile, companyId, caseId, CompanyAction.APPROVE_CASE);
     item.approve();
     event(profile, "APPROVE_CASE", item.getTitle() + " har godkänts");
     return caseItem(item);
   }
 
   public List<Plan> plans(DemoProfile profile, String companyId) {
-    return plans.findByCompany(companyFor(profile, companyId)).stream()
+    return plans.findByCompany(requireCompanyPermission(profile, companyId, CompanyAction.READ)).stream()
         .map(
             item ->
                 new Plan(item.getId(), item.getName(), item.getMonthlyPremium().toPlainString()))
@@ -91,7 +93,7 @@ public class CompanyPortalDataService {
   }
 
   public List<Employment> employments(DemoProfile profile, String companyId, String query) {
-    return employments.findByCompany(companyFor(profile, companyId)).stream()
+    return employments.findByCompany(requireCompanyPermission(profile, companyId, CompanyAction.READ)).stream()
         .filter(
             item ->
                 query == null
@@ -106,7 +108,7 @@ public class CompanyPortalDataService {
   }
 
   public Employment employment(DemoProfile profile, String companyId, String employmentId) {
-    var item = ownedEmployment(profile, companyId, employmentId);
+    var item = ownedEmployment(profile, companyId, employmentId, CompanyAction.READ);
     return employment(item);
   }
 
@@ -118,8 +120,8 @@ public class CompanyPortalDataService {
       String planId,
       BigDecimal salary,
       LocalDate startsOn) {
-    requireMutation(CompanyMutation.ADD_EMPLOYEE);
-    var company = companyFor(profile, companyId);
+    requireCustomerSupports(CompanyMutation.ADD_EMPLOYEE);
+    var company = requireCompanyPermission(profile, companyId, CompanyAction.ADD_EMPLOYEE);
     if (name == null
         || name.isBlank()
         || salary == null
@@ -146,10 +148,10 @@ public class CompanyPortalDataService {
   @Transactional
   public Employment changeSalary(
       DemoProfile profile, String companyId, String employmentId, BigDecimal salary) {
-    requireMutation(CompanyMutation.CHANGE_SALARY);
+    requireCustomerSupports(CompanyMutation.CHANGE_SALARY);
     if (salary == null || salary.signum() <= 0)
       throw new IllegalArgumentException("Lönen måste vara större än noll");
-    var item = ownedEmployment(profile, companyId, employmentId);
+    var item = ownedEmployment(profile, companyId, employmentId, CompanyAction.CHANGE_SALARY);
     item.changeSalary(salary);
     event(profile, "CHANGE_SALARY", "Lön ändrad för " + item.getPerson().getDisplayName());
     return employment(item);
@@ -162,12 +164,12 @@ public class CompanyPortalDataService {
       String employmentId,
       LeaveReason reason,
       LocalDate until) {
-    requireMutation(CompanyMutation.REGISTER_LEAVE);
+    requireCustomerSupports(CompanyMutation.REGISTER_LEAVE);
     if (!rules.leaveReasons().contains(reason)
         || until == null
         || until.isAfter(LocalDate.now(clock).plusMonths(rules.maximumLeaveMonths())))
       throw new IllegalArgumentException("Tjänstledigheten följer inte kundens regler");
-    var item = ownedEmployment(profile, companyId, employmentId);
+    var item = ownedEmployment(profile, companyId, employmentId, CompanyAction.REGISTER_LEAVE);
     item.registerLeave(until);
     event(
         profile,
@@ -179,22 +181,22 @@ public class CompanyPortalDataService {
   @Transactional
   public Employment endEmployment(
       DemoProfile profile, String companyId, String employmentId, LocalDate endsOn) {
-    requireMutation(CompanyMutation.END_EMPLOYMENT);
-    var item = ownedEmployment(profile, companyId, employmentId);
+    requireCustomerSupports(CompanyMutation.END_EMPLOYMENT);
+    var item = ownedEmployment(profile, companyId, employmentId, CompanyAction.END_EMPLOYMENT);
     item.end(endsOn == null ? LocalDate.now(clock) : endsOn);
     event(
         profile, "END_EMPLOYMENT", "Anställning avslutad för " + item.getPerson().getDisplayName());
     return employment(item);
   }
 
-  private void requireMutation(CompanyMutation mutation) {
+  private void requireCustomerSupports(CompanyMutation mutation) {
     if (!rules.companyMutations().contains(mutation))
       throw new IllegalArgumentException("Åtgärden är inte tillgänglig för denna kund");
   }
 
   private EmploymentEntity ownedEmployment(
-      DemoProfile profile, String companyId, String employmentId) {
-    var company = companyFor(profile, companyId);
+      DemoProfile profile, String companyId, String employmentId, CompanyAction action) {
+    var company = requireCompanyPermission(profile, companyId, action);
     var item =
         employments
             .findById(employmentId)
@@ -204,8 +206,9 @@ public class CompanyPortalDataService {
     return item;
   }
 
-  private CompanyCaseEntity ownedCase(DemoProfile profile, String companyId, String caseId) {
-    var company = companyFor(profile, companyId);
+  private CompanyCaseEntity ownedCase(
+      DemoProfile profile, String companyId, String caseId, CompanyAction action) {
+    var company = requireCompanyPermission(profile, companyId, action);
     var item =
         cases
             .findById(caseId)
@@ -215,20 +218,26 @@ public class CompanyPortalDataService {
     return item;
   }
 
-  private CompanyEntity companyFor(DemoProfile profile, String companyId) {
-    return authorizations(profile).stream()
-        .map(CompanyAuthorizationEntity::getCompany)
-        .filter(company -> companyId == null || company.getId().equals(companyId))
-        .findFirst()
+  private CompanyEntity requireCompanyPermission(DemoProfile profile, String companyId, CompanyAction action) {
+    if (companyId == null || companyId.isBlank())
+      throw new IllegalArgumentException("companyId krävs");
+    var authorization =
+      authorizations
+        .findByProfileAndCompanyId(profileEntity(profile), companyId)
         .orElseThrow(() -> new SecurityException("Profilen är inte behörig för företaget"));
+    if (!authorization.holds(action))
+      throw new SecurityException("Profilen saknar behörighet för åtgärden " + action);
+    return authorization.getCompany();
   }
 
   private List<CompanyAuthorizationEntity> authorizations(DemoProfile profile) {
-    var entity =
-        profiles
-            .findByCustomerIdAndExternalId(profile.customerId(), profile.id())
-            .orElseThrow(() -> new SecurityException("Unknown demo profile"));
-    return authorizations.findByProfile(entity);
+    return authorizations.findByProfile(profileEntity(profile));
+  }
+
+  private DemoProfileEntity profileEntity(DemoProfile profile) {
+    return profiles
+        .findByCustomerIdAndExternalId(profile.customerId(), profile.id())
+        .orElseThrow(() -> new SecurityException("Unknown demo profile"));
   }
 
   private Employment employment(EmploymentEntity item) {

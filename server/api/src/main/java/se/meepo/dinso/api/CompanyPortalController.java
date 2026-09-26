@@ -24,62 +24,62 @@ public class CompanyPortalController {
 
   @GetMapping("/companies")
   java.util.List<CompanyPortalDataService.Company> companies(HttpServletRequest request) {
-    return data.companies(current(request, false));
+    return data.companies(current(request));
   }
 
   @GetMapping("/overview")
   CompanyPortalDataService.Overview overview(
       HttpServletRequest request,
-      @RequestParam(name = "companyId", required = false) String companyId) {
-    return data.overview(current(request, false), companyId);
+      @RequestParam(name = "companyId") String companyId) {
+    return data.overview(current(request), companyId);
   }
 
   @GetMapping("/plans")
   java.util.List<CompanyPortalDataService.Plan> plans(
       HttpServletRequest request,
-      @RequestParam(name = "companyId", required = false) String companyId) {
-    return data.plans(current(request, false), companyId);
+      @RequestParam(name = "companyId") String companyId) {
+    return data.plans(current(request), companyId);
   }
 
   @GetMapping("/cases")
   java.util.List<CompanyPortalDataService.Case> cases(
       HttpServletRequest request,
-      @RequestParam(name = "companyId", required = false) String companyId) {
-    return data.cases(current(request, false), companyId);
+      @RequestParam(name = "companyId") String companyId) {
+    return data.cases(current(request), companyId);
   }
 
   @PutMapping("/cases/{caseId}/approve")
   CompanyPortalDataService.Case approveCase(
       HttpServletRequest request,
       @PathVariable("caseId") String caseId,
-      @RequestParam(name = "companyId", required = false) String companyId) {
-    return data.approveCase(current(request, true), companyId, caseId);
+      @RequestParam(name = "companyId") String companyId) {
+    return data.approveCase(current(request), companyId, caseId);
   }
 
   @GetMapping("/employments")
   java.util.List<CompanyPortalDataService.Employment> employments(
       HttpServletRequest request,
-      @RequestParam(name = "companyId", required = false) String companyId,
+      @RequestParam(name = "companyId") String companyId,
       @RequestParam(name = "query", required = false) String query) {
-    return data.employments(current(request, false), companyId, query);
+    return data.employments(current(request), companyId, query);
   }
 
   @GetMapping("/employments/{employmentId}")
   CompanyPortalDataService.Employment employment(
       HttpServletRequest request,
       @PathVariable("employmentId") String employmentId,
-      @RequestParam(name = "companyId", required = false) String companyId) {
-    return data.employment(current(request, false), companyId, employmentId);
+      @RequestParam(name = "companyId") String companyId) {
+    return data.employment(current(request), companyId, employmentId);
   }
 
   @PostMapping("/employees")
   @ResponseStatus(HttpStatus.CREATED)
   CompanyPortalDataService.Employment addEmployee(
       HttpServletRequest request,
-      @RequestParam(name = "companyId", required = false) String companyId,
+      @RequestParam(name = "companyId") String companyId,
       @RequestBody EmployeeRequest input) {
     return data.addEmployee(
-        current(request, true),
+        current(request),
         companyId,
         input.name(),
         input.planId(),
@@ -91,36 +91,34 @@ public class CompanyPortalController {
   CompanyPortalDataService.Employment changeSalary(
       HttpServletRequest request,
       @PathVariable("employmentId") String employmentId,
-      @RequestParam(name = "companyId", required = false) String companyId,
+      @RequestParam(name = "companyId") String companyId,
       @RequestBody SalaryRequest input) {
-    return data.changeSalary(current(request, true), companyId, employmentId, input.salary());
+    return data.changeSalary(current(request), companyId, employmentId, input.salary());
   }
 
   @PutMapping("/employments/{employmentId}/leave")
   CompanyPortalDataService.Employment registerLeave(
       HttpServletRequest request,
       @PathVariable("employmentId") String employmentId,
-      @RequestParam(name = "companyId", required = false) String companyId,
+      @RequestParam(name = "companyId") String companyId,
       @RequestBody LeaveRequest input) {
     return data.registerLeave(
-        current(request, true), companyId, employmentId, input.reason(), input.until());
+        current(request), companyId, employmentId, input.reason(), input.until());
   }
 
   @PutMapping("/employments/{employmentId}/end")
   CompanyPortalDataService.Employment endEmployment(
       HttpServletRequest request,
       @PathVariable("employmentId") String employmentId,
-      @RequestParam(name = "companyId", required = false) String companyId,
+      @RequestParam(name = "companyId") String companyId,
       @RequestBody EndRequest input) {
-    return data.endEmployment(current(request, true), companyId, employmentId, input.endsOn());
+    return data.endEmployment(current(request), companyId, employmentId, input.endsOn());
   }
 
-  private DemoProfile current(HttpServletRequest request, boolean write) {
+  private DemoProfile current(HttpServletRequest request) {
     var profile = sessions.requireActive(token(request));
-    if ((profile.portal() != PortalType.COMPANY && profile.role() != DemoRole.SYSTEM_ADMIN)
-        || (write
-            && profile.role() != DemoRole.COMPANY_ADMIN
-            && profile.role() != DemoRole.SYSTEM_ADMIN)) throw new Forbidden();
+    if (profile.portal() != PortalType.COMPANY && profile.role() != DemoRole.SYSTEM_ADMIN)
+      throw new Forbidden();
     return profile;
   }
 

@@ -13,16 +13,19 @@ import se.meepo.dinso.service.*;
 public class DemoSessionService {
   private final DemoProfileRepository profiles;
   private final DemoSessionRepository sessions;
+  private final CompanyAuthorizationRepository authorizations;
   private final DemoJwtService jwt;
   private final Clock clock;
 
   public DemoSessionService(
       DemoProfileRepository profiles,
       DemoSessionRepository sessions,
+      CompanyAuthorizationRepository authorizations,
       DemoJwtService jwt,
       Clock clock) {
     this.profiles = profiles;
     this.sessions = sessions;
+    this.authorizations = authorizations;
     this.jwt = jwt;
     this.clock = clock;
   }
@@ -39,6 +42,10 @@ public class DemoSessionService {
         profiles
             .findByCustomerIdAndExternalId(customer, profileId)
             .orElseThrow(() -> new IllegalArgumentException("Unknown demo profile"));
+    if (profile.getPortal() == PortalType.COMPANY
+        && authorizations.findByProfile(profile).stream()
+            .noneMatch(item -> item.holds(CompanyAction.READ)))
+      throw new SecurityException("Ingen behörighet till företagsportalen");
     var sessionId = UUID.randomUUID().toString();
     var expiresAt = clock.instant().plus(Duration.ofHours(2));
     sessions.save(new DemoSessionEntity(sessionId, profile, expiresAt));
