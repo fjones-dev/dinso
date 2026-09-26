@@ -1,9 +1,9 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import customer from '@customer/config'
-import type { Portal, Profile } from '../data/customer'
+import type { CompanyAction, Portal, Profile } from '../data/customer'
 
-type Company = { id: string; name: string }
+type Company = { id: string; name: string; actions?: CompanyAction[] }
 
 type StoredSession = {
   profileId: string
@@ -12,6 +12,7 @@ type StoredSession = {
   companyId: string
 }
 
+const useApi = import.meta.env.VITE_USE_API === 'true'
 const storageKey = `dinso:${customer.key}:demo-session`
 
 const readStoredSession = (): StoredSession | null => {
@@ -78,12 +79,12 @@ export const useDemoSessionStore = defineStore('demo-session', () => {
     () => profile.value?.portal ?? null,
   )
   const isCompany = computed<boolean>(() => activePortal.value === 'COMPANY')
-  const canManageCompany = computed<boolean>(
-    () =>
-      profile.value?.role === 'COMPANY_ADMIN' ||
-      profile.value?.role === 'SYSTEM_ADMIN',
+  const selectedCompany = computed<Company | undefined>(() =>
+    companies.value.find((item) => item.id === companyId.value),
   )
-  const canApproveCases = computed<boolean>(() => canManageCompany.value)
+
+  const can = (action: CompanyAction): boolean =>
+    !useApi || (selectedCompany.value?.actions ?? []).includes(action)
   const availableCompanies = computed<Company[]>(() =>
     companies.value.length > 0
       ? companies.value
@@ -149,8 +150,7 @@ export const useDemoSessionStore = defineStore('demo-session', () => {
     companies,
     activePortal,
     isCompany,
-    canManageCompany,
-    canApproveCases,
+    can,
     availableCompanies,
     selectedCompanyName,
     start,

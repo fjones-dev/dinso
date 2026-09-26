@@ -49,7 +49,11 @@ public class CompanyPortalDataService {
         .filter(item -> item.holds(CompanyAction.READ))
         .map(
             item ->
-                new Company(item.getCompany().getId(), item.getCompany().getName(), item.getRole()))
+                new Company(
+                    item.getCompany().getId(),
+                    item.getCompany().getName(),
+                    item.getRole(),
+                    item.grantedActions().stream().sorted().toList()))
         .toList();
   }
 
@@ -264,7 +268,7 @@ public class CompanyPortalDataService {
     entities.persist(new DemoEventEntity(profile.customerId(), clock.instant(), type, summary));
   }
 
-  public record Company(String id, String name, DemoRole role) {}
+  public record Company(String id, String name, DemoRole role, List<CompanyAction> actions) {}
 
   public record Overview(
       String companyId, String companyName, long employees, long plans, int openCases) {}

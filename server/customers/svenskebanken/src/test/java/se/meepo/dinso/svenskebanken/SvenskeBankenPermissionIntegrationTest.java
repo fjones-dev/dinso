@@ -53,6 +53,13 @@ class SvenskeBankenPermissionIntegrationTest {
         primary.authorizationId(), EnumSet.of(CompanyAction.READ, CompanyAction.APPROVE_CASE));
     var profile = norah();
 
+    assertThat(companyData.companies(profile))
+        .filteredOn(company -> company.id().equals(primary.companyId()))
+        .singleElement()
+        .satisfies(
+            company ->
+                assertThat(company.actions())
+                    .containsExactly(CompanyAction.READ, CompanyAction.APPROVE_CASE));
     var pending = pendingCase(profile, primary.companyId());
     assertThat(companyData.approveCase(profile, primary.companyId(), pending).status())
         .isEqualTo("APPROVED");

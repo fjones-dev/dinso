@@ -78,7 +78,7 @@ const portals = computed(() => [
   {
     id: 'SYSTEM' as Portal,
     title: t('Systemadmin'),
-    description: t('Se företagsadministratörer och vilka företag de hanterar.'),
+    description: t('Hantera vilka åtgärder varje profil får utföra i respektive företag.'),
     available:
       selectedProfile.value?.portals?.includes('SYSTEM') ??
       selectedProfile.value?.portal === 'SYSTEM',
@@ -170,6 +170,8 @@ const login = async (selected: Profile): Promise<void> => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ profileId: selected.id }),
       })
+      if (response.status === 403)
+        throw new Error(t('Du har ingen behörighet till företagsportalen.'))
       if (!response.ok) throw new Error(t('Profilen kunde inte öppnas.'))
       token = ((await response.json()) as { token: string }).token
     } catch (error) {

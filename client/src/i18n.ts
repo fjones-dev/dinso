@@ -35,6 +35,12 @@ const enumLabels: Record<string, string> = {
   PAYING: 'Utbetalning pågår',
   LEAVE: 'Tjänstledig',
   ENDED: 'Avslutad',
+  READ: 'Läsa information',
+  APPROVE_CASE: 'Godkänna ärenden',
+  ADD_EMPLOYEE: 'Lägga till medarbetare',
+  CHANGE_SALARY: 'Ändra lön',
+  REGISTER_LEAVE: 'Registrera tjänstledighet',
+  END_EMPLOYMENT: 'Avsluta anställning',
 }
 
 export function translate(

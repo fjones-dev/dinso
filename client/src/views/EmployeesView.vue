@@ -14,15 +14,17 @@ type Employee = {
   status: string
 }
 type LeaveReason = { code: string; label: string }
+type EmployeeAction = 'salary' | 'leave' | 'end'
 
 const props = defineProps<{
   title: string
   description: string
   employees: Employee[]
-  canManage: boolean
+  canAdd: boolean
+  allowedActions: EmployeeAction[]
   search: string
   selectedEmployee: Employee | null
-  employeeAction: 'salary' | 'leave' | 'end'
+  employeeAction: EmployeeAction
   salaryDraft: number
   leaveReason: string
   leaveUntil: string
@@ -38,7 +40,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:search': [value: string]
-  'update:employeeAction': [value: 'salary' | 'leave' | 'end']
+  'update:employeeAction': [value: EmployeeAction]
   'update:salaryDraft': [value: number]
   'update:leaveReason': [value: string]
   'update:leaveUntil': [value: string]
@@ -78,7 +80,7 @@ const columns = computed<DataTableColumn[]>(() => [
   { key: 'plan', label: props.t('Plan') },
   { key: 'salary', label: props.t('Lön'), align: 'right' },
   { key: 'status', label: props.t('Status') },
-  ...(props.canManage
+  ...(props.allowedActions.length > 0
     ? [{ key: 'actions', label: props.t('Åtgärder'), align: 'right' as const }]
     : []),
 ])
@@ -95,7 +97,7 @@ async function manageEmployee(employee: Employee) {
 <template>
   <section>
     <PageHeader :title="title" :description="description">
-      <template v-if="canManage" #action>
+      <template v-if="canAdd" #action>
         <button class="button" @click="emit('add')">
           {{ t('Lägg till medarbetare') }}
         </button>
@@ -153,7 +155,7 @@ async function manageEmployee(employee: Employee) {
     </Panel>
 
     <div
-      v-if="selectedEmployee && canManage"
+      v-if="selectedEmployee && allowedActions.length > 0"
       ref="employeeActionPanel"
     >
       <Panel
@@ -171,9 +173,15 @@ async function manageEmployee(employee: Employee) {
         <label class="field">
           <span>{{ t('Åtgärd') }}</span>
           <select v-model="actionModel">
-            <option value="salary">{{ t('Ändra lön') }}</option>
-            <option value="leave">{{ t('Registrera tjänstledighet') }}</option>
-            <option value="end">{{ t('Avsluta anställning') }}</option>
+            <option v-if="allowedActions.includes('salary')" value="salary">
+              {{ t('Ändra lön') }}
+            </option>
+            <option v-if="allowedActions.includes('leave')" value="leave">
+              {{ t('Registrera tjänstledighet') }}
+            </option>
+            <option v-if="allowedActions.includes('end')" value="end">
+              {{ t('Avsluta anställning') }}
+            </option>
           </select>
         </label>
         <label v-if="employeeAction === 'salary'" class="field">
