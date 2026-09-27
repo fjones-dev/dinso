@@ -3,6 +3,7 @@ package se.meepo.dinso.database;
 import jakarta.persistence.EntityManager;
 import java.time.Clock;
 import java.util.*;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import se.meepo.dinso.database.entity.*;
@@ -36,10 +37,16 @@ public class AdminPermissionService {
         Arrays.stream(CompanyAction.values())
             .map(action -> new ActionInfo(action, action.isWrite()))
             .toList();
-    var result =
+    var companyProfiles =
         profiles.findByCustomerId(customer).stream()
             .filter(profile -> profile.getPortal() == PortalType.COMPANY)
             .sorted(Comparator.comparing(DemoProfileEntity::getName))
+            .toList();
+    var authorizationsByProfile =
+        authorizations.findByProfileInFetchingCompanyAndActions(companyProfiles).stream()
+            .collect(Collectors.groupingBy(item -> item.getProfile().getExternalId()));
+    var result =
+        companyProfiles.stream()
             .map(
                 profile ->
                     new ProfilePermissions(
@@ -47,7 +54,9 @@ public class AdminPermissionService {
                         profile.getName(),
                         profile.getDescription(),
                         profile.getRole(),
-                        authorizations.findByProfile(profile).stream()
+                        authorizationsByProfile
+                            .getOrDefault(profile.getExternalId(), List.of())
+                            .stream()
                             .sorted(Comparator.comparing(item -> item.getCompany().getName()))
                             .map(AdminPermissionService::companyPermissions)
                             .toList()))
