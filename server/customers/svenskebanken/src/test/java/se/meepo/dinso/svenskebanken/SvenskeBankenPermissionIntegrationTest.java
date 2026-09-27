@@ -159,6 +159,8 @@ class SvenskeBankenPermissionIntegrationTest {
         .isEqualTo(400);
     assertThat(status(client, systemAdmin, "PUT", path, "{\"actions\":[\"READ\",\"APPROVE_CASE\"]}"))
         .isEqualTo(200);
+    assertThat(status(client, systemAdmin, "PUT", path, "{\"actions\":[\"READ\",null]}"))
+        .isEqualTo(400);
   }
 
   private DemoProfile norah() {

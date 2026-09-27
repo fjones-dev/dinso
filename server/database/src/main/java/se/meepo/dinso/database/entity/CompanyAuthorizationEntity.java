@@ -69,6 +69,8 @@ public class CompanyAuthorizationEntity {
 
   public void replaceActions(Set<CompanyAction> newAction) {
     if (newAction == null) throw new IllegalArgumentException("Åtgärdsbehörigheter måste anges");
+    if (newAction.stream().anyMatch(java.util.Objects::isNull))
+      throw new IllegalArgumentException("Åtgärdsbehörigheter kan inte vara null");
     if (newAction.stream().anyMatch(CompanyAction::isWrite) && !newAction.contains(CompanyAction.READ))
       throw new IllegalArgumentException(
           "Behörighet att utföra åtgärder kräver även behörighet att läsa information");

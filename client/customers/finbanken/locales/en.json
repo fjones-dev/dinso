@@ -298,5 +298,20 @@
   "Inga företag kopplade": "No companies assigned",
   "Systemadministratör": "System administrator",
   "System administrator with an overview of company administrators.": "System administrator with an overview of company administrators.",
-  "No company administrators": "No company administrators"
+  "No company administrators": "No company administrators",
+  "Läsa information": "Read information",
+  "Godkänna ärenden": "Approve cases",
+  "Lägga till medarbetare": "Add employees",
+  "Ändra lön": "Change salary",
+  "Registrera tjänstledighet": "Register leave",
+  "Avsluta anställning": "End employment",
+  "Sparat": "Saved",
+  "Spara ändring": "Save changes",
+  "Sparar…": "Saving…",
+  "Behörigheterna kunde inte hämtas.": "The permissions could not be loaded.",
+  "Behörigheterna kunde inte sparas.": "The permissions could not be saved.",
+  "Du har ingen behörighet till företagsportalen.": "You do not have access to the company portal.",
+  "Inga företagsprofiler": "No company profiles",
+  "Det finns inga profiler att hantera i den här kundvarianten.": "There are no profiles to manage in this customer variant.",
+  "Hantera vilka åtgärder varje profil får utföra i respektive företag.": "Manage which actions each profile may perform in each company."
 }
