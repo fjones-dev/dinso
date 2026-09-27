@@ -60,13 +60,32 @@ class FinBankenAuthorizationIntegrationTest {
     }
   }
 
+  @Test
+  void systemAdminGetsAnEmptyPermissionListInsteadOfAnError() throws Exception {
+    var client = HttpClient.newHttpClient();
+    var token = login(client, "finbanken-system-admin");
+    var response =
+        client.send(
+            request("/api/admin/profiles")
+                .header("Authorization", "Bearer " + token)
+                .GET()
+                .build(),
+            HttpResponse.BodyHandlers.ofString());
+    assertThat(response.statusCode()).isEqualTo(200);
+    assertThat(response.body()).contains("\"profiles\":[]");
+  }
+
   private String login(HttpClient client) throws Exception {
+    return login(client, "finbanken-portfolio");
+  }
+
+  private String login(HttpClient client, String profileId) throws Exception {
     var response =
         client.send(
             request("/api/auth/login")
                 .header("Content-Type", "application/json")
                 .POST(
-                    HttpRequest.BodyPublishers.ofString("{\"profileId\":\"finbanken-portfolio\"}"))
+                    HttpRequest.BodyPublishers.ofString("{\"profileId\":\"" + profileId + "\"}"))
                 .build(),
             HttpResponse.BodyHandlers.ofString());
     assertThat(response.statusCode()).isEqualTo(200);

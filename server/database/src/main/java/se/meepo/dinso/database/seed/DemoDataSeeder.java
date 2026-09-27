@@ -3,11 +3,15 @@ package se.meepo.dinso.database.seed;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.*;
+import java.util.EnumSet;
+import java.util.Set;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import se.meepo.dinso.database.entity.*;
 import se.meepo.dinso.database.repository.DemoProfileRepository;
+import se.meepo.dinso.service.CompanyAction;
 import se.meepo.dinso.service.CustomerId;
+import se.meepo.dinso.service.DemoRole;
 
 @Component
 public class DemoDataSeeder {
@@ -96,7 +100,14 @@ public class DemoDataSeeder {
           .forEach(
               company ->
                   entities.persist(
-                      new CompanyAuthorizationEntity(profile, company, profile.getRole())));
+                      new CompanyAuthorizationEntity(
+                          profile, company, profile.getRole(), presetFor(profile.getRole()))));
+  }
+
+  private static Set<CompanyAction> presetFor(DemoRole role) {
+    return role == DemoRole.COMPANY_VIEWER
+        ? EnumSet.of(CompanyAction.READ)
+        : EnumSet.allOf(CompanyAction.class);
   }
 
   private void seedPrivateInsuranceData(
@@ -167,11 +178,14 @@ public class DemoDataSeeder {
                     || profile.getRole() == se.meepo.dinso.service.DemoRole.SYSTEM_ADMIN)
         .forEach(
             profile -> {
-              entities.persist(new CompanyAuthorizationEntity(profile, primary, profile.getRole()));
+              entities.persist(
+                  new CompanyAuthorizationEntity(
+                      profile, primary, profile.getRole(), presetFor(profile.getRole())));
               if (profile.getExternalId().endsWith("-multi")
                   || profile.getRole() == se.meepo.dinso.service.DemoRole.SYSTEM_ADMIN)
                 entities.persist(
-                    new CompanyAuthorizationEntity(profile, secondary, profile.getRole()));
+                    new CompanyAuthorizationEntity(
+                        profile, secondary, profile.getRole(), presetFor(profile.getRole())));
             });
   }
 

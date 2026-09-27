@@ -6,6 +6,7 @@ import { activeLocale, translate } from '../i18n'
 import { statusTone } from '../data/status'
 import { useDemoSessionStore } from '../stores/demoSession'
 import { useDemoPortalStore } from '../stores/demoPortal'
+import { useAdminPermissionsStore } from '../stores/adminPermissions'
 import OverviewView from './OverviewView.vue'
 import InsuranceView from './InsuranceView.vue'
 import EmployeesView from './EmployeesView.vue'
@@ -21,6 +22,7 @@ const route = useRoute()
 const router = useRouter()
 const session = useDemoSessionStore()
 const portal = useDemoPortalStore()
+const admin = useAdminPermissionsStore()
 const t = (source: string, values?: Record<string, string | number>): string =>
   translate(activeLocale.value, source, values)
 const page = computed(() => route.meta.page ?? 'overview')
@@ -55,10 +57,7 @@ const activityRows = computed(() =>
   page.value === 'documents' ? portal.documentRows : portal.activityRows,
 )
 const systemAdminDescription = computed(() =>
-  t('Se företagsadministratörer och vilka företag de hanterar.'),
-)
-const systemAdminPanelDescription = computed(() =>
-  t('Här visas företagsadministratörer för den valda organisationen.'),
+  t('Hantera vilka åtgärder varje profil får utföra i respektive företag.'),
 )
 const overviewDescription = computed(() =>
   t(
@@ -102,20 +101,20 @@ const caseModalLabels = computed(() => ({
 const activityPage = computed(
   () => page.value as 'events' | 'documents' | 'payments',
 )
-const companyAdmins = computed(() =>
-  customer.profiles
-    .filter((item) => item.role === 'COMPANY_ADMIN')
-    .map((item) => ({
-      name: item.name,
-      companies:
-        (item.companies?.length
-          ? item.companies
-          : item.company
-            ? [item.company]
-            : []
-        ).join(', ') || t('Inga företag kopplade'),
-    })),
-)
+
+const employeeActions = computed(() => {
+  const allowed: ('salary' | 'leave' | 'end')[] = []
+  if (session.can('CHANGE_SALARY')) allowed.push('salary')
+  if (session.can('REGISTER_LEAVE')) allowed.push('leave')
+  if (session.can('END_EMPLOYMENT')) allowed.push('end')
+  return allowed
+})
+const manageEmployee = (
+  employee: Parameters<typeof portal.manageEmployee>[0],
+): void => {
+  portal.manageEmployee(employee)
+  portal.employeeAction = employeeActions.value[0] ?? 'salary'
+}
 const navigate = (target: 'insurance' | 'cases'): void => {
   void router.push({
     name: target === 'insurance' ? 'private-insurance' : 'company-cases',
@@ -129,7 +128,8 @@ const approveSelectedCase = async (): Promise<void> => {
   selectedCase.value = null
 }
 onMounted(() => {
-  void (session.isCompany ? portal.loadCompanyData() : portal.loadFundAllocation())
+  if (session.activePortal === 'SYSTEM') void admin.load()
+  else void (session.isCompany ? portal.loadCompanyData() : portal.loadFundAllocation())
 })
 
 const finishEmployee = async (draft: {
@@ -149,10 +149,14 @@ const finishEmployee = async (draft: {
     v-if="session.activePortal === 'SYSTEM'"
     :title="t('Systemadmin')"
     :description="systemAdminDescription"
-    :panel-title="t('Företagsadministratörer')"
-    :panel-description="systemAdminPanelDescription"
-    :rows="companyAdmins"
+    :profiles="admin.profiles"
+    :catalog="admin.catalog"
+    :loading="admin.loading"
+    :saving-id="admin.savingId"
+    :saved-id="admin.savedId"
+    :error="admin.error"
     :t="t"
+    @save="admin.save"
   />
   <OverviewView
     v-else-if="page === 'overview'"
@@ -187,7 +191,8 @@ const finishEmployee = async (draft: {
     :title="t('Medarbetare')"
     :description="employeeDescription"
     :employees="portal.filteredEmployees"
-    :can-manage="session.canManageCompany"
+    :can-add="session.can('ADD_EMPLOYEE')"
+    :allowed-actions="employeeActions"
     :search="portal.search"
     :selected-employee="portal.selectedEmployee"
     :employee-action="portal.employeeAction"
@@ -206,7 +211,7 @@ const finishEmployee = async (draft: {
     @update:leave-reason="portal.leaveReason = $event"
     @update:leave-until="portal.leaveUntil = $event"
     @update:end-date="portal.endDate = $event"
-    @manage="portal.manageEmployee"
+    @manage="manageEmployee"
     @cancel="portal.selectedEmployee = null"
     @add="router.push({ name: 'company-add-employee' })"
     @save="portal.saveEmployee"
@@ -246,7 +251,7 @@ const finishEmployee = async (draft: {
   <CaseModal
     v-if="selectedCase"
     :item="selectedCase"
-    :can-approve="session.canApproveCases"
+    :can-approve="session.can('APPROVE_CASE')"
     :labels="caseModalLabels"
     @close="selectedCase = null"
     @approve="approveSelectedCase"

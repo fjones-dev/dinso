@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import customer from '@customer/config'
+import type { CompanyAction } from '../data/customer'
 import { activeLocale, translate } from '../i18n'
 import { useDemoSessionStore } from './demoSession'
 
@@ -31,7 +32,7 @@ type PrivateOverview = {
 type InsuranceDetail = {
   fundHoldings: { fundName: string; allocationPercent: string }[]
 }
-type Company = { id: string; name: string }
+type Company = { id: string; name: string; actions: CompanyAction[] }
 type CompanyEmployment = {
   id: string
   personName: string
@@ -378,7 +379,7 @@ export const useDemoPortalStore = defineStore('demo-portal', () => {
     }
   }
   const approveCase = async (item: Case): Promise<void> => {
-    if (!session.canApproveCases) return
+    if (!session.can('APPROVE_CASE')) return
     try {
       if (useApi) {
         const response = await fetch(companyRequest(`cases/${item.id}/approve`), {

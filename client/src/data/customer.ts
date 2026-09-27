@@ -4,6 +4,13 @@ export type Role =
   | 'COMPANY_VIEWER'
   | 'SYSTEM_ADMIN'
 export type Portal = 'PRIVATE' | 'COMPANY' | 'SYSTEM'
+export type CompanyAction =
+  | 'READ'
+  | 'APPROVE_CASE'
+  | 'ADD_EMPLOYEE'
+  | 'CHANGE_SALARY'
+  | 'REGISTER_LEAVE'
+  | 'END_EMPLOYMENT'
 export type ProfilePortal = Portal
 export interface Profile {
   id: string

@@ -72,7 +72,7 @@ const routes: RouteRecordRaw[] = [
     path: '/foretag/medarbetare/lagg-till',
     name: 'company-add-employee',
     component: PortalView,
-    meta: { portal: 'COMPANY', page: 'add-employee', roles: ['COMPANY_ADMIN'] },
+    meta: { portal: 'COMPANY', page: 'add-employee' },
   },
   {
     path: '/foretag/avtal',
